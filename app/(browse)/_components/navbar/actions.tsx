@@ -76,6 +76,23 @@ export const Actions = () => {
     return <Skeleton className="w-12 h-6" />;
   }
 
+  if (!user) {
+    return (
+      <Button
+        variant="outline"
+        className="text-sm"
+        onClick={handleLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          "Login"
+        )}
+      </Button>
+    );
+  }
+
   return (
     <div className="flex items-center justify-end gap-x-6 ml-4 lg:ml-0">
       {!!currentUser && (
