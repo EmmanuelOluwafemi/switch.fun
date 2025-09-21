@@ -35,6 +35,11 @@ export function useSelf() {
     queryKey: ["currentUser"],
     queryFn: async () => {
       const response = await fetch("/api/user/me");
+      // Handle 202 status (new user needs profile completion) as success
+      if (response.status === 202) {
+        return response.json();
+      }
+      // Handle 401 status (unauthorized) as success
       if (!response.ok) {
         throw new Error("Failed to fetch user");
       }

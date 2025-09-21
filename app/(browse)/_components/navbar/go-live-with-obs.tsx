@@ -77,10 +77,8 @@ export const GoLiveWithOBS = ({
     try {
       setIsLoading(true);
       const ingress = await createIngress(IngressInput.RTMP_INPUT);
-      console.log("ingress", ingress);
       if (ingress) {
         const result = await getStreamData();
-        console.log("result", result);
         if (result.stream) {
           setStream(result.stream);
           toast.success("New stream key generated");

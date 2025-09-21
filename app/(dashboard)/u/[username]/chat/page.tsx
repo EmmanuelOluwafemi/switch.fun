@@ -1,10 +1,10 @@
-import { getSelfFromApi } from "@/lib/auth-service";
+import { getSelf } from "@/lib/auth-service";
 import { getStreamByUserIdFromApi } from "@/lib/stream-service";
 
 import { ToggleCard } from "./_components/toggle-card";
 
 const ChatPage = async () => {
-  const self = await getSelfFromApi();
+  const self = await getSelf();
   const stream = await getStreamByUserIdFromApi(self.id);
 
   if (!stream) {

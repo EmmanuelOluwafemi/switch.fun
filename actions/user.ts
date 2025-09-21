@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSelf } from "@/lib/auth-service";
+import { getUser } from "@civic/auth-web3/nextjs";
 import { invalidateUserCache } from "@/lib/user-service";
 import { getCachedData } from "@/lib/redis";
 // Platform wallet creation is now handled through the modal flow
@@ -187,12 +188,53 @@ export const updateUser = async (values: {
   interests?: string[];
 }) => {
   try {
+    
     // Validate input
     const validatedValues = updateUserSchema.parse(values);
 
-    // Get current user and apply rate limiting
-    const self = await getSelf();
-    await checkRateLimit(self.id, "update_user", 10, 300); // 10 updates per 5 minutes
+    // Get raw Civic user data for new user creation scenarios
+    let civicUser;
+    try {
+      civicUser = await getUser();
+    } catch (err: any) {
+      console.error("Civic Auth getUser failed:", err);
+      throw new Error("Authentication failed");
+    }
+    if (!civicUser?.id) {
+      throw new Error("Unauthorized");
+    }
+    await checkRateLimit(civicUser.id, "update_user", 10, 300); // 10 updates per 5 minutes
+
+    // Check if this is a new user (Civic user but no database record)
+    // The ID passed might be the Civic user ID, so check by externalUserId
+    const existingDbUser = await db.user.findUnique({
+      where: { externalUserId: civicUser.id },
+      include: {
+        interests: {
+          include: {
+            subCategory: true,
+          },
+        },
+      },
+    });
+    
+    // If no database user exists, this is a new user creation
+    if (!existingDbUser) {
+      const newUserData = {
+        externalUserId: civicUser.id,
+        username: validatedValues.username!,
+        imageUrl: civicUser.picture || "https://i.postimg.cc/wxGCZ9Qy/Frame-12.png",
+        solanaWallet: validatedValues.solanaWallet,
+        interests: validatedValues.interests,
+      };
+      
+      const createdUser = await createUser(newUserData);
+      return createdUser;
+    }
+    
+
+    // Use the existing database user for updates (we already have the user data)
+    const self = existingDbUser;
 
     const updateData: { username?: string; bio?: string; solanaWallet?: string } = {};
 
@@ -267,7 +309,7 @@ export const updateUser = async (values: {
     });
 
     // Fetch the updated user after transaction completes
-    const updatedUser = await db.user.findUnique({
+    let updatedUser = await db.user.findUnique({
       where: { id: self.id },
       include: {
         stream: true,
@@ -285,13 +327,64 @@ export const updateUser = async (values: {
     });
 
     if (!updatedUser) {
-      throw new Error("Failed to update user");
+      // Create new user combining Civic data + Profile form data
+      updatedUser = await db.$transaction(async (tx) => {
+        // 1. Create user with stream (Civic data + Form data)
+        const createdUser = await tx.user.create({
+          data: {
+            externalUserId: civicUser.id, // From Civic
+            username: validatedValues.username!, // From form
+            imageUrl: civicUser.picture || "https://i.postimg.cc/wxGCZ9Qy/Frame-12.png", // From Civic
+            solanaWallet: validatedValues.solanaWallet, // From form
+            stream: {
+              create: {
+                name: `${validatedValues.username}'s Stream`, // From form
+              },
+            },
+          },
+        });
+
+        // 2. Create user interests (From form)
+        if (validatedValues.interests && validatedValues.interests.length > 0) {
+          await tx.userInterest.createMany({
+            data: validatedValues.interests.map((subCategoryId) => ({
+              userId: createdUser.id,
+              subCategoryId,
+            })),
+          });
+        }
+
+        // 3. Return complete user with all relationships
+        return await tx.user.findUnique({
+          where: { id: createdUser.id },
+          include: {
+            stream: true,
+            interests: {
+              include: {
+                subCategory: true,
+              },
+            },
+            _count: {
+              select: {
+                followedBy: true,
+                following: true,
+              },
+            },
+          },
+        });
+      });
+      
+    }
+
+    // Ensure updatedUser exists before proceeding
+    if (!updatedUser) {
+      throw new Error("Failed to create or fetch user after update operation");
     }
 
     // Platform wallet will be created through the modal flow when needed
 
     // Batch cache invalidation and path revalidation
-    const cacheInvalidations = [invalidateUserCache(self.id, self.username)];
+    const cacheInvalidations = [invalidateUserCache(updatedUser.id, updatedUser.username)];
 
     const pathsToRevalidate = [
       `/u/${updatedUser.username}`,
@@ -300,9 +393,9 @@ export const updateUser = async (values: {
 
     if (validatedValues.username) {
       cacheInvalidations.push(
-        invalidateUserCache(self.id, validatedValues.username)
+        invalidateUserCache(updatedUser.id, validatedValues.username)
       );
-      pathsToRevalidate.push(`/u/${self.username}`, `/@${self.username}`);
+      pathsToRevalidate.push(`/u/${updatedUser.username}`, `/@${updatedUser.username}`);
     }
 
     // Execute all operations in parallel

@@ -33,7 +33,7 @@ export const InfoCard = ({
             <Pencil className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-sm lg:text-lg font-semibold capitalize font-serif">
+            <h2 className="text-sm lg:text-lg font-semibold capitalize font-sans">
               Edit your stream info
             </h2>
             <p className="text-muted-foreground text-xs lg:text-sm">
@@ -48,15 +48,15 @@ export const InfoCard = ({
         <Separator />
         <div className="p-4 lg:p-6 space-y-4">
           <div>
-            <h3 className="text-sm text-muted-foreground mb-2">
+            <h3 className="text-sm text-muted-foreground mb-2 font-sans">
               Name
             </h3>
-            <p className="text-sm font-semibold">
+            <p className="text-sm font-semibold font-sans">
               {name}
             </p>
           </div>
           <div>
-            <h3 className="text-sm text-muted-foreground mb-2">
+            <h3 className="text-sm text-muted-foreground mb-2 font-sans">
               Thumbnail
             </h3>
             {thumbnailUrl && (

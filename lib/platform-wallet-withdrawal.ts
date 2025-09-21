@@ -50,16 +50,6 @@ export const generateWithdrawalTransaction = async (
     );
     const destinationAta = destinationAtaAccount.address;
 
-    console.log("Withdrawal transaction details:", {
-      userPublicKey: userPublicKey.toString(),
-      destinationAddress: destinationAddress.toString(),
-      destinationAta: destinationAta.toString(),
-      amount,
-      gasInUsdc,
-      amountInBaseUnits: amountInBaseUnits.toString(),
-      gasInUsdcBaseUnits: gasInUsdcBaseUnits.toString(),
-    });
-
     // Create the withdraw transaction with explicit account resolution
     const withdrawBuilder = program.methods
       .withdraw({
@@ -73,12 +63,9 @@ export const generateWithdrawalTransaction = async (
         tokenProgram: TOKEN_PROGRAM_ID,
       });
 
-    console.log("About to call .transaction() on withdraw method...");
-
     let tx;
     try {
       tx = await withdrawBuilder.transaction();
-      console.log("Successfully created withdraw transaction");
     } catch (error) {
       let n_error = error as AnchorError;
       console.error("Error details:", {
@@ -89,8 +76,6 @@ export const generateWithdrawalTransaction = async (
     }
 
     // Set fee payer to server wallet (platform pays gas)
-    console.log("Server wallet public key:", serverWallet.publicKey.toString());
-    console.log("User public key:", userPublicKey.toString());
     tx.feePayer = serverWallet.publicKey;
 
     const { blockhash } = await connection.getLatestBlockhash();
@@ -127,22 +112,12 @@ export const broadcastWithdrawalTransaction = async (
     const transactionBuffer = Buffer.from(userSignedTransaction, "base64");
     const transaction = Transaction.from(transactionBuffer);
 
-    console.log("Final withdrawal transaction ready for broadcast:");
-    console.log("- Fee payer:", transaction.feePayer?.toString());
-    console.log(
-      "- Signatures:",
-      transaction.signatures.map((sig) => ({
-        publicKey: sig.publicKey?.toString(),
-        signature: sig.signature ? "present" : "missing",
-      }))
-    );
-
     // Verify transaction signatures before sending
     try {
       const isValid = transaction.verifySignatures();
-      console.log("Transaction signature verification:", isValid);
     } catch (verifyError) {
       console.log("Signature verification error:", verifyError);
+      throw verifyError;
     }
 
     // Transaction should already be fully signed, just broadcast it
@@ -198,8 +173,6 @@ export const completeWithdrawal = async (
   signature: string;
 }> => {
   try {
-    console.log("Completing withdrawal for user:", userId);
-
     // Broadcast the user-signed transaction
     const signature = await broadcastWithdrawalTransaction(
       userSignedTransaction

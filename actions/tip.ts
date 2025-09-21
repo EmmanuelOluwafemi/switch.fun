@@ -90,7 +90,6 @@ export async function createAndBroadcastTip(
         });
         // Note: We'll need to implement room connection on the server side
         // For now, we'll return the tip data for client-side broadcasting
-        console.log("Tip created, ready for broadcast:", tipBroadcastData);
       } catch (broadcastError) {
         console.error("Failed to broadcast tip:", broadcastError);
         // Don't fail the entire operation if broadcast fails

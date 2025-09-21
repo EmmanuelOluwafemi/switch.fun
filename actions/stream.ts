@@ -3,12 +3,12 @@
 import { Stream } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
-import { getSelfFromApi } from "@/lib/auth-service";
+import { getSelf } from "@/lib/auth-service";
 import { getStreamByUserIdFromApi, updateStream as updateStreamService } from "@/lib/stream-service";
 
 export const updateStream = async (values: Partial<Stream>) => {
   try {
-    const self = await getSelfFromApi();
+    const self = await getSelf();
     const selfStream = await getStreamByUserIdFromApi(self.id);
 
     if (!selfStream) {

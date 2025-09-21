@@ -1,4 +1,4 @@
-import { getSelfFromApi } from "@/lib/auth-service";
+import { getSelf } from "@/lib/auth-service";
 import { getStreamByUserIdFromApi } from "@/lib/stream-service";
 
 import { UrlCard } from "./_components/url-card";
@@ -6,7 +6,7 @@ import { KeyCard } from "./_components/key-card";
 import { ConnectModal } from "./_components/connect-modal";
 
 const KeysPage = async () => {
-  const self = await getSelfFromApi();
+  const self = await getSelf();
   const stream = await getStreamByUserIdFromApi(self.id);
 
   if (!stream) {
@@ -16,7 +16,7 @@ const KeysPage = async () => {
   return ( 
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl font-bold font-sans">
           Keys & URLs
         </h1>
         <ConnectModal />

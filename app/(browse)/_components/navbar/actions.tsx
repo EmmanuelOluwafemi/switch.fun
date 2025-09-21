@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { useUser } from "@civic/auth-web3/react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import GoLive from "./goLive";
 import { UpdateUserProfileModal } from "./update-profile-modal";
 import { ActivatePlatformWalletModal } from "./activate-platform-wallet-modal";
@@ -16,30 +16,48 @@ export const Actions = () => {
   const [loading, setLoading] = useState(false);
   const [openUsernameModal, setOpenUsernameModal] = useState(false);
   const [openPlatformWalletModal, setOpenPlatformWalletModal] = useState(false);
-  const { signIn } = useUser();
+  const [showPlatformWalletAfterProfile, setShowPlatformWalletAfterProfile] = useState(false);
+  const { signIn, user } = useUser();
 
   const { data: currentUser, isLoading, isError, refetch } = useSelf();
 
   // Handle modal opening logic
   useEffect(() => {
-    if (!isLoading && !isError && currentUser) {
-      // First priority: check if user needs to complete profile
-      if (!currentUser?.username || !currentUser?.interests?.length) {
+    // If we have a Civic user, check what needs to be done
+    if (!isLoading && user) {
+      
+      // Check if this is a new user response or existing user needing profile completion
+      const isNewUser = currentUser && (currentUser as any).isNewUser;
+      const needsProfileCompletion = isNewUser || 
+        !currentUser || 
+        !currentUser.username?.trim() || 
+        !currentUser.interests?.length;
+      
+      if (needsProfileCompletion) {
         setOpenUsernameModal(true);
         setOpenPlatformWalletModal(false);
+        setShowPlatformWalletAfterProfile(false);
       } 
-      // Second priority: check if user needs platform wallet
-      else if ((currentUser as any)?.needsPlatformWallet) {
+      // Second priority: check if user needs platform wallet (from API or after profile completion)
+      else if ((currentUser as any)?.needsPlatformWallet || showPlatformWalletAfterProfile) {
         setOpenUsernameModal(false);
         setOpenPlatformWalletModal(true);
+        setShowPlatformWalletAfterProfile(false); // Reset the flag
       }
       // All good, close any open modals
       else {
         setOpenUsernameModal(false);
         setOpenPlatformWalletModal(false);
+        setShowPlatformWalletAfterProfile(false);
       }
     }
-  }, [currentUser, isLoading, isError]);
+  }, [currentUser, isLoading, isError, showPlatformWalletAfterProfile, user]);
+
+  // Handle profile completion success
+  const handleProfileCompleted = useCallback(() => {
+    setShowPlatformWalletAfterProfile(true);
+    refetch(); // Refresh user data
+  }, [refetch]);
 
   // 👉 2️⃣ Handle the "Login" button
   async function handleLogin() {
@@ -56,26 +74,6 @@ export const Actions = () => {
 
   if (isLoading) {
     return <Skeleton className="w-12 h-6" />;
-  }
-
-  if (isError) {
-    return (
-      <Button
-        onClick={handleLogin}
-        disabled={loading}
-        variant="default"
-        size="sm"
-        className="px-8"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in…
-          </>
-        ) : (
-          "Login"
-        )}
-      </Button>
-    );
   }
 
   return (
@@ -106,11 +104,12 @@ export const Actions = () => {
         open={openUsernameModal}
         setOpen={setOpenUsernameModal}
         currentUser={{
-          id: currentUser?.id ?? "",
+          id: currentUser?.id ?? user?.id ?? "",
           username: currentUser?.username ?? "",
-          picture: currentUser?.imageUrl ?? "",
+          picture: currentUser?.imageUrl ?? (currentUser as any)?.imageUrl ?? user?.picture ?? "",
           interests: currentUser?.interests ?? [],
         }}
+        onProfileCompleted={handleProfileCompleted}
       />
 
       <ActivatePlatformWalletModal
@@ -121,8 +120,7 @@ export const Actions = () => {
           username: currentUser?.username ?? "",
         }}
         onSuccess={() => {
-          console.log("Platform wallet activated successfully");
-          refetch(); // Refresh user data
+          refetch();
         }}
       />
     </div>

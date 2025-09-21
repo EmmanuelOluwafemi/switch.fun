@@ -55,7 +55,6 @@ export const WalletQRButton: React.FC<WalletQRButtonProps> = ({
   const hasWallet = userHasWallet(userContext);
   const address = hasWallet ? userContext.solana.address : "";
   const { wallet, address: solAddress } = useWallet({ type: "solana" });
-  console.log("sol_address", solAddress);
   // const uri = address
   //   ? `${address}${tokenMint ? `?spl-token=${tokenMint}` : ""}`
   //   : "";
@@ -143,7 +142,6 @@ export const WalletQRButton: React.FC<WalletQRButtonProps> = ({
   };
 
   const handleInitPDA = async () => {
-    console.log("Init PDA with", selectedToken, amount);
     setInitLoading(true);
 
     try {
@@ -166,8 +164,6 @@ export const WalletQRButton: React.FC<WalletQRButtonProps> = ({
         })
         .signers([])
         .rpc();
-
-      console.log("Transaction signature", tx);
       toast.success(`Tip sent! Tx: ${tx}`, { duration: 5000 });
     } catch (err: any) {
       console.error("handleInitPDA error", err);
@@ -235,7 +231,6 @@ export const WalletQRButton: React.FC<WalletQRButtonProps> = ({
 
   const fetchUserProgramWallet = async () => {
     if (!address) return;
-    console.log("solAddress", solAddress);
     const [recipientStatePDA] = PublicKey.findProgramAddressSync(
       [Buffer.from("user"), new PublicKey(address).toBuffer()],
       program.programId
@@ -243,12 +238,10 @@ export const WalletQRButton: React.FC<WalletQRButtonProps> = ({
 
     setStatePda(recipientStatePDA.toBase58());
 
-    console.log("Recipient State PDA:", recipientStatePDA.toBase58());
     try {
       const recipientStateAccount =
         await program.account.streamer.fetch(recipientStatePDA);
       setIsPDAInit(true);
-      console.log("Recipient State Data:", recipientStateAccount);
     } catch (err) {
       setIsPDAInit(false);
     }

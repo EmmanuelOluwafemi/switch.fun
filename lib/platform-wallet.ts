@@ -9,8 +9,6 @@ import {
   getConnection,
   getServerWallet,
   signAndSendTransaction,
-  broadcastTransaction,
-  createTransactionTemplate,
 } from "./server-wallet";
 import { db } from "./db";
 
@@ -39,8 +37,6 @@ export const generatePlatformWallet = async (
       .transaction();
 
     // Set fee payer to server wallet (platform pays gas)
-    console.log("Server wallet public key:", serverWallet.publicKey.toString());
-    console.log("User public key:", userPublicKey.toString());
     tx.feePayer = serverWallet.publicKey;
 
     // Get recent blockhash
@@ -79,20 +75,9 @@ export const broadcastPlatformWalletTransaction = async (
     const transactionBuffer = Buffer.from(userSignedTransaction, "base64");
     const transaction = Transaction.from(transactionBuffer);
 
-    console.log("Final transaction ready for broadcast:");
-    console.log("- Fee payer:", transaction.feePayer?.toString());
-    console.log(
-      "- Signatures:",
-      transaction.signatures.map((sig) => ({
-        publicKey: sig.publicKey?.toString(),
-        signature: sig.signature ? "present" : "missing",
-      }))
-    );
-
     // Verify transaction signatures before sending
     try {
       const isValid = transaction.verifySignatures();
-      console.log("Transaction signature verification:", isValid);
     } catch (verifyError: any) {
       console.log("Signature verification error:", verifyError.message);
     }

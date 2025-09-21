@@ -37,13 +37,19 @@ interface UpdateUserProfileModalProps {
       };
     }[];
   };
+  onProfileCompleted?: () => void;
 }
 
 const MIN_INTERESTS = 3;
 const MAX_INTERESTS = 8;
 
 export const UpdateUserProfileModal = React.memo(
-  ({ open, setOpen, currentUser }: UpdateUserProfileModalProps) => {
+  ({
+    open,
+    setOpen,
+    currentUser,
+    onProfileCompleted,
+  }: UpdateUserProfileModalProps) => {
     // Get Civic wallet context
     const userContext = useUser();
     const hasWallet = userHasWallet(userContext);
@@ -69,7 +75,8 @@ export const UpdateUserProfileModal = React.memo(
       if (currentUser?.username && currentUser.username !== username) {
         setUsername(currentUser.username);
       }
-    }, [currentUser?.username]); // More specific dependency
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser?.username]); // Intentionally excluding 'username' to prevent infinite re-renders
 
     // Reset interests when currentUser changes (only when needed)
     useEffect(() => {
@@ -82,7 +89,8 @@ export const UpdateUserProfileModal = React.memo(
       if (currentInterestsString !== newInterestsString) {
         setSelectedSubCategories(newInterests);
       }
-    }, [currentUser?.interests]); // Only depend on interests
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser?.interests]); // Intentionally excluding 'selectedSubCategories' to prevent infinite re-renders
 
     // Memoize validation to prevent re-computation on every render
     const validation = useMemo(() => {
@@ -108,12 +116,21 @@ export const UpdateUserProfileModal = React.memo(
         try {
           // Always use updateUser for existing users (who have an id)
           // This handles both users with empty usernames and users updating their info
-          await updateUser({
+          const result = await updateUser({
             id: currentUser.id,
             username,
             interests: selectedSubCategories,
             solanaWallet,
           });
+
+          // Check if this was a new user completing their profile for the first time
+          const wasNewUser =
+            !currentUser.username || !currentUser.interests?.length;
+
+          // Call the profile completed callback if this was a new user
+          if (wasNewUser && onProfileCompleted) {
+            onProfileCompleted();
+          }
         } catch (err) {
           console.error("Failed to update user:", err);
         } finally {
@@ -126,6 +143,8 @@ export const UpdateUserProfileModal = React.memo(
         currentUser,
         username,
         selectedSubCategories,
+        solanaWallet,
+        onProfileCompleted,
         setOpen,
       ]
     );

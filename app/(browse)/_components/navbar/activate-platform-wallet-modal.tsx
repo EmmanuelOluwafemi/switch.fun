@@ -48,9 +48,6 @@ export const ActivatePlatformWalletModal = React.memo(
       setError(null);
 
       try {
-        console.log("User wallet address:", solanaWallet);
-        // console.log('Wallet context address:', userContext?.solana?.address);
-
         // Step 1: Create platform wallet transaction
         const createResponse = await fetch("/api/wallet/platform", {
           method: "POST",
@@ -68,19 +65,11 @@ export const ActivatePlatformWalletModal = React.memo(
         const { serializedTransaction } = await createResponse.json();
 
         // Step 2: Access the actual wallet for signing
-        // console.log('Civic context structure:', {
-        //   solana: Object.keys(userContext.solana || {}),
-        //   wallet: userContext.solana.wallet ? Object.keys(userContext.solana.wallet) : 'No wallet property'
-        // });
-
-        // The actual wallet signing methods are on userContext.solana.wallet
         // @ts-ignore
         const wallet = userContext?.solana.wallet;
         if (!wallet) {
           throw new Error("No wallet available for signing");
         }
-
-        console.log("Wallet methods:", Object.keys(wallet));
 
         // Temporarily close our modal to allow Civic modal to be interactive
         setOpen(false);
@@ -94,22 +83,7 @@ export const ActivatePlatformWalletModal = React.memo(
             Buffer.from(serializedTransaction, "base64")
           );
 
-          console.log("Transaction before user signing:");
-          console.log("- Fee payer:", transaction.feePayer?.toString());
-          console.log(
-            "- Required signers:",
-            transaction.instructions.flatMap((ix) =>
-              ix.keys.filter((k) => k.isSigner).map((k) => k.pubkey.toString())
-            )
-          );
-
           signedTransaction = await wallet.signTransaction(transaction);
-
-          console.log("Transaction after user signing:");
-          // console.log('- Signatures:', signedTransaction.signatures.map(sig => ({
-          //   publicKey: sig.publicKey?.toString(),
-          //   signature: sig.signature ? 'present' : 'missing'
-          // })));
         } else if (wallet.signAllTransactions) {
           const { Transaction } = await import("@solana/web3.js");
           const transaction = Transaction.from(
@@ -143,7 +117,6 @@ export const ActivatePlatformWalletModal = React.memo(
         }
 
         const result = await completeResponse.json();
-        console.log("Platform wallet activated:", result);
 
         // Success! Modal is already closed, just trigger refresh
         onSuccess();

@@ -81,14 +81,6 @@ export async function withdrawFromPlatformWallet(
     const gasInSol = 0.001; // Conservative estimate for withdraw instruction
     const gasInUsdc = convertSolToUsdc(gasInSol, solPrice);
 
-    console.log("Platform withdrawal details:", {
-      amount,
-      gasInSol,
-      gasInUsdc,
-      destinationAddress,
-      userAddress,
-    });
-
     // Step 1: Create withdrawal transaction on server
     const createResponse = await fetch("/api/wallet/platform/withdraw", {
       method: "POST",
@@ -115,19 +107,10 @@ export async function withdrawFromPlatformWallet(
       throw new Error("Civic wallet not available for signing");
     }
 
-    console.log("Transaction ready for user signing");
-
     const { Transaction } = await import("@solana/web3.js");
     const transaction = Transaction.from(
       Buffer.from(serializedTransaction, "base64")
     );
-
-    console.log("Transaction before user signing:", {
-      feePayer: transaction.feePayer?.toString(),
-      requiredSigners: transaction.instructions.flatMap((ix) =>
-        ix.keys.filter((k) => k.isSigner).map((k) => k.pubkey.toString())
-      ),
-    });
 
     const signedTransaction =
       await userContext.solana.wallet.signTransaction(transaction);
@@ -157,7 +140,6 @@ export async function withdrawFromPlatformWallet(
     }
 
     const result = await completeResponse.json();
-    console.log("Platform withdrawal completed:", result);
 
     return result.signature;
   } catch (error) {
@@ -195,13 +177,6 @@ export async function withdrawFromNormalWallet(
     // Convert amount to base units
     const amountInBaseUnits = Math.floor(amount * Math.pow(10, USDC_DECIMALS));
 
-    console.log("Normal wallet withdrawal details:", {
-      amount,
-      amountInBaseUnits,
-      sourceATA: sourceATA.toString(),
-      destinationATA: destinationATA.toString(),
-    });
-
     // Create transaction with transfer instruction
     const transaction = new Transaction();
 
@@ -210,7 +185,6 @@ export async function withdrawFromNormalWallet(
       await connection.getAccountInfo(destinationATA);
     } catch {
       // ATA doesn't exist, need to create it
-      console.log("Adding create ATA instruction for destination");
       transaction.add(
         createAssociatedTokenAccountInstruction(
           userPubkey, // payer
@@ -241,16 +215,8 @@ export async function withdrawFromNormalWallet(
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = userPubkey;
 
-    console.log("Transaction before signing:", {
-      feePayer: transaction.feePayer?.toString(),
-      instructions: transaction.instructions.length,
-      blockhash,
-    });
-
     // Sign transaction using Civic wallet
     const signedTransaction = await civicWallet.signTransaction(transaction);
-
-    console.log("Transaction signed successfully");
 
     // Send and confirm transaction
     const signature = await connection.sendRawTransaction(
@@ -275,10 +241,8 @@ export async function withdrawFromNormalWallet(
       throw new Error(`Transaction failed: ${confirmation.value.err}`);
     }
 
-    console.log("Normal wallet withdrawal successful:", signature);
     return signature;
   } catch (error) {
-    console.error("Normal wallet withdrawal error:", error);
     throw error;
   }
 }

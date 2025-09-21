@@ -1,7 +1,12 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useDataChannel } from "@livekit/components-react";
 import { Room } from "livekit-client";
-import { broadcastTipNotification, createTipBroadcastData, isTipNotification, formatTipMessage } from "@/lib/tip-broadcast";
+import {
+  broadcastTipNotification,
+  createTipBroadcastData,
+  isTipNotification,
+  formatTipMessage,
+} from "@/lib/tip-broadcast";
 import { toast } from "sonner";
 import { TIP_CONFIG } from "@/lib/tip-config";
 
@@ -28,10 +33,10 @@ export function useTipBroadcast(
   onTipReceived?: (notification: TipNotification) => void
 ) {
   const { message } = useDataChannel();
-  
+
   // Keep track of processed message IDs to prevent duplicates
   const processedMessageIds = useRef(new Set<string>());
-  
+
   // Clear old message IDs periodically to prevent memory leaks
   useEffect(() => {
     const interval = setInterval(() => {
@@ -39,32 +44,40 @@ export function useTipBroadcast(
         processedMessageIds.current.clear();
       }
     }, 300000); // Clear every 5 minutes
-    
+
     return () => clearInterval(interval);
   }, []);
 
   // Broadcast a tip notification
-  const broadcastTip = useCallback(async (tipData: any) => {
-    if (!room) {
-      console.error("No room available for tip broadcasting");
-      return;
-    }
-
-    try {
-      // Validate tip data before broadcasting
-      if (!tipData || !tipData.id || !tipData.amount || !tipData.tipper || !tipData.streamer) {
-        console.error("Invalid tip data for broadcasting:", tipData);
+  const broadcastTip = useCallback(
+    async (tipData: any) => {
+      if (!room) {
+        console.error("No room available for tip broadcasting");
         return;
       }
 
-      const broadcastData = createTipBroadcastData(tipData);
-      await broadcastTipNotification(room, broadcastData);
-      console.log("Tip broadcasted successfully");
-    } catch (error) {
-      console.error("Failed to broadcast tip:", error);
-      // Don't throw the error to prevent breaking the app
-    }
-  }, [room]);
+      try {
+        // Validate tip data before broadcasting
+        if (
+          !tipData ||
+          !tipData.id ||
+          !tipData.amount ||
+          !tipData.tipper ||
+          !tipData.streamer
+        ) {
+          console.error("Invalid tip data for broadcasting:", tipData);
+          return;
+        }
+
+        const broadcastData = createTipBroadcastData(tipData);
+        await broadcastTipNotification(room, broadcastData);
+      } catch (error) {
+        console.error("Failed to broadcast tip:", error);
+        // Don't throw the error to prevent breaking the app
+      }
+    },
+    [room]
+  );
 
   // Handle incoming tip notifications with deduplication
   useEffect(() => {
@@ -72,12 +85,18 @@ export function useTipBroadcast(
 
     try {
       const data = JSON.parse(new TextDecoder().decode(message.payload));
-      
+
       if (isTipNotification(data)) {
         const tip = data.tip;
-        
+
         // Validate tip data before processing
-        if (!tip || !tip.id || !tip.amount || !tip.tipperUsername || !tip.streamerUsername) {
+        if (
+          !tip ||
+          !tip.id ||
+          !tip.amount ||
+          !tip.tipperUsername ||
+          !tip.streamerUsername
+        ) {
           console.error("Invalid tip notification data:", tip);
           return;
         }
@@ -85,16 +104,15 @@ export function useTipBroadcast(
         // Check if we've already processed this message
         const messageId = `${tip.id}-${tip.timestamp}`;
         if (processedMessageIds.current.has(messageId)) {
-          console.log("Duplicate tip notification ignored:", messageId);
           return;
         }
-        
+
         // Mark this message as processed
         processedMessageIds.current.add(messageId);
 
         const isLargeTip = tip.amount >= TIP_CONFIG.LARGE_TIP_THRESHOLD;
         const isMegaTip = tip.amount >= TIP_CONFIG.MEGA_TIP_THRESHOLD;
-        
+
         const notification: TipNotification = {
           id: tip.id,
           amount: tip.amount,
@@ -118,8 +136,6 @@ export function useTipBroadcast(
         } catch (callbackError) {
           console.error("Error in tip received callback:", callbackError);
         }
-
-        console.log("Tip notification processed:", notification);
       }
     } catch (error) {
       console.error("Failed to parse tip notification:", error);

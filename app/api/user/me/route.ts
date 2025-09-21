@@ -43,54 +43,14 @@ export async function GET(request: NextRequest) {
 
     if (!user) {
       // User doesn't exist in database - this is a new user from Civic
-      // Create a minimal user record and return it so the frontend can handle profile completion
-      try {
-        const newUser = await db.$transaction(async (tx) => {
-          // Create basic user record
-          const createdUser = await tx.user.create({
-            data: {
-              externalUserId: self.id,
-              username: "", // Empty username - will be set in profile modal
-              imageUrl:
-                self.picture || "https://i.postimg.cc/wxGCZ9Qy/Frame-12.png", // Use Civic profile picture or default
-              stream: {
-                create: {
-                  name: "New Stream", // Temporary name
-                },
-              },
-            },
-            include: {
-              interests: {
-                include: {
-                  subCategory: true,
-                },
-              },
-              stream: true,
-              _count: {
-                select: {
-                  followedBy: true,
-                  following: true,
-                },
-              },
-            },
-          });
-
-          return createdUser;
-        });
-
-        // Platform wallet will be created when user completes profile via updateUser
-
-        return NextResponse.json(newUser);
-      } catch (createError: any) {
-        console.error(
-          "[GET /api/user/me] Failed to create new user:",
-          createError
-        );
-        return NextResponse.json(
-          { error: "Failed to create user profile" },
-          { status: 500 }
-        );
-      }
+      // Return a special response indicating profile completion is needed
+      return NextResponse.json({
+        isNewUser: true,
+        externalUserId: self.id,
+        imageUrl: self.picture || "https://i.postimg.cc/wxGCZ9Qy/Frame-12.png",
+        needsProfileCompletion: true,
+        message: "Profile completion required for new user"
+      }, { status: 202 }); // 202 Accepted - indicates further action needed
     }
 
     // Check if existing user needs platform wallet creation
