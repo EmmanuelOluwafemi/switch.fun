@@ -10,8 +10,8 @@ export function StaticHero() {
             Livestream And Get Fan Rewards
           </h3>
           <p className="text-sm md:text-xl text-white/80 mb-6 text-center md:text-left">
-            Gaming, coding, live events, and creative content — all powered by
-            Solana blockchain.
+            Gaming, coding, live events, and creative content — all powered by the
+            Blockchain.
           </p>
           <div className="flex flex-wrap gap-4 justify-center md:justify-start">
             <HeroButton />
