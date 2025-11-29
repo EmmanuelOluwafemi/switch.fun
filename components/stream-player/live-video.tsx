@@ -48,10 +48,10 @@ export const LiveVideo = ({
 
   const onQualityChange = (quality: string) => {
     setVideoQuality(quality);
-    
+
     if (videoTracks.length > 0) {
       const videoPublication = videoTracks[0].publication as RemoteTrackPublication;
-      
+
       // Map quality string to VideoQuality enum
       let videoQualityEnum: VideoQuality;
       switch (quality) {
@@ -71,17 +71,38 @@ export const LiveVideo = ({
           videoQualityEnum = VideoQuality.HIGH; // Default to high for auto
           break;
       }
-      
+
       // Set the video quality if not auto
       if (quality !== "auto") {
         videoPublication.setVideoQuality(videoQualityEnum);
       }
     }
   };
-  
+
   useEffect(() => {
     onVolumeChange(100);
   }, []);
+
+  // Attach/detach tracks to video element with proper cleanup
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    const participantTracks = useTracks([Track.Source.Camera, Track.Source.Microphone])
+      .filter((track) => track.participant.identity === participant.identity);
+
+    // Attach tracks to video element
+    participantTracks.forEach((track) => {
+      track.publication.track?.attach(videoElement);
+    });
+
+    // Cleanup: detach tracks when component unmounts or participant changes
+    return () => {
+      participantTracks.forEach((track) => {
+        track.publication.track?.detach(videoElement);
+      });
+    };
+  }, [participant.identity]);
 
   const toggleFullscreen = () => {
     if (isFullscreen) {
@@ -98,16 +119,8 @@ export const LiveVideo = ({
 
   useEventListener("fullscreenchange", handleFullscreenChange, wrapperRef);
 
-  useTracks([Track.Source.Camera, Track.Source.Microphone])
-    .filter((track) => track.participant.identity === participant.identity)
-    .forEach((track) => {
-      if (videoRef.current) {
-        track.publication.track?.attach(videoRef.current)
-      }
-    });
-
   return (
-    <div 
+    <div
       ref={wrapperRef}
       className="relative h-full flex"
     >
