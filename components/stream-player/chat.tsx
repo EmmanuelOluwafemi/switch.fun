@@ -15,13 +15,12 @@ import { ChatVariant, useChatSidebar } from "@/store/use-chat-sidebar";
 import { useTipBroadcast, TipNotification } from "@/hooks/use-tip-broadcast";
 import {
   reactionsAtom,
-  tipNotificationsAtom,
+  streamTipNotificationsFamily,
   addReactionAtom,
-  addTipNotificationAtom,
-  chatInputValueAtom,
+  addStreamTipNotificationFamily,
   clearOldReactionsAtom,
-  clearOldTipNotificationsAtom,
-  initializeTipNotificationsAtom
+  clearOldStreamTipNotificationsFamily,
+  chatInputValueAtom,
 } from "@/store/chat-atoms";
 
 import { ChatForm } from "./chat-form";
@@ -66,20 +65,21 @@ export const Chat = ({
 
   const isOnline = participant && connectionState === ConnectionState.Connected;
   const isHidden = !isChatEnabled || !isOnline;
-  
+
   // Check if the current viewer is the host
   const isHost = viewerName === hostName;
 
   // Jotai atoms for state management
   const [value, setValue] = useAtom(chatInputValueAtom);
   const [reactions] = useAtom(reactionsAtom);
-  const [tipNotifications] = useAtom(tipNotificationsAtom);
+
+  // Use stream-scoped atoms (no filtering needed!)
+  const [tipNotifications] = useAtom(streamTipNotificationsFamily(hostIdentity));
   const [, addReaction] = useAtom(addReactionAtom);
-  const [, addTipNotification] = useAtom(addTipNotificationAtom);
+  const [, addTipNotification] = useAtom(addStreamTipNotificationFamily(hostIdentity));
   const [, clearOldReactions] = useAtom(clearOldReactionsAtom);
-  const [, clearOldTipNotifications] = useAtom(clearOldTipNotificationsAtom);
-  const [, initializeTipNotifications] = useAtom(initializeTipNotificationsAtom);
-  
+  const [, clearOldTipNotifications] = useAtom(clearOldStreamTipNotificationsFamily(hostIdentity));
+
   const { chatMessages: messages, send } = useChat();
   const room = useRoomContext();
 
@@ -94,11 +94,6 @@ export const Chat = ({
       onExpand();
     }
   }, [matches, onExpand]);
-
-  // Initialize tip notifications from localStorage on mount
-  useEffect(() => {
-    initializeTipNotifications();
-  }, [initializeTipNotifications]);
 
   // Cleanup old reactions and tip notifications periodically
   useEffect(() => {

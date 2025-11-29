@@ -15,9 +15,9 @@ import { TipOverlayManager } from "./tip-overlay";
 import { GiftTipOverlayManager } from "./gift-tip-overlay";
 import { TipNotification } from "@/hooks/use-tip-broadcast";
 import {
-  largeTipNotificationsAtom,
-  giftTipNotificationsAtom,
-  removeTipNotificationAtom,
+  streamLargeTipsFamily,
+  streamGiftTipsFamily,
+  removeStreamTipNotificationFamily,
 } from "@/store/chat-atoms";
 
 import { OfflineVideo } from "./offline-video";
@@ -35,10 +35,10 @@ export const Video = ({ hostName, hostIdentity, thumbnailUrl }: VideoProps) => {
   const participant = useRemoteParticipant(hostIdentity);
   const room = useRoomContext();
 
-  // Use Jotai atoms for state management
-  const [largeTipNotifications] = useAtom(largeTipNotificationsAtom);
-  const [giftTipNotifications] = useAtom(giftTipNotificationsAtom);
-  const [, removeTipNotification] = useAtom(removeTipNotificationAtom);
+  // Use stream-scoped atoms (no filtering needed!)
+  const [largeTips] = useAtom(streamLargeTipsFamily(hostIdentity));
+  const [giftTips] = useAtom(streamGiftTipsFamily(hostIdentity));
+  const [, removeNotification] = useAtom(removeStreamTipNotificationFamily(hostIdentity));
 
   const tracks = useTracks([
     Track.Source.Camera,
@@ -46,14 +46,14 @@ export const Video = ({ hostName, hostIdentity, thumbnailUrl }: VideoProps) => {
   ]).filter((track) => track.participant.identity === hostIdentity);
 
   // Note: Tip notifications are handled by the Chat component via useTipBroadcast
-  // The Video component only consumes the notifications from the shared state
-  // This prevents duplicate tip notifications in the chat
+  // The Video component only consumes the notifications from stream-scoped atoms
+  // This prevents duplicate tip notifications and ensures stream isolation
 
   const handleNotificationComplete = useCallback(
     (id: string) => {
-      removeTipNotification(id);
+      removeNotification(id);
     },
-    [removeTipNotification]
+    [removeNotification]
   );
 
   let content;
@@ -81,13 +81,13 @@ export const Video = ({ hostName, hostIdentity, thumbnailUrl }: VideoProps) => {
 
       {/* Large/Mega tip overlay - HIGHEST PRIORITY (z-50) */}
       <TipOverlayManager
-        notifications={largeTipNotifications}
+        notifications={largeTips}
         onNotificationComplete={handleNotificationComplete}
       />
 
       {/* Regular gift tip overlay - LOWER PRIORITY (z-40) */}
       <GiftTipOverlayManager
-        notifications={giftTipNotifications}
+        notifications={giftTips}
         onNotificationComplete={handleNotificationComplete}
       />
     </div>
