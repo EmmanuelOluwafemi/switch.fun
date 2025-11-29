@@ -83,7 +83,6 @@ export const GoLiveWithOBS = ({
 
       // Create ingress
       const ingress = await createIngress(IngressInput.RTMP_INPUT);
-      console.log("Ingress created:", ingress);
 
       // Validate ingress creation
       if (!ingress) {
@@ -100,7 +99,6 @@ export const GoLiveWithOBS = ({
 
       while (retries > 0) {
         result = await getStreamData();
-        console.log("Stream data (attempt " + (4 - retries) + "):", result);
 
         if (result.stream && result.stream.streamKey === ingress.streamKey) {
           // Stream data updated successfully
