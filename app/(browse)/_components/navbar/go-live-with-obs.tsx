@@ -105,9 +105,9 @@ export const GoLiveWithOBS = ({
           break;
         }
 
-        // Wait a bit before retrying
+        // Wait a bit before retrying (reduced delay since cache is invalidated)
         if (retries > 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
         retries--;
       }

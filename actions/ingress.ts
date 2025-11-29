@@ -14,6 +14,7 @@ import { TrackSource } from "livekit-server-sdk/dist/proto/livekit_models";
 import { db } from "@/lib/db";
 import { getSelf } from "@/lib/auth-service";
 import { revalidatePath } from "next/cache";
+import { invalidateCache } from "@/lib/redis";
 
 const roomService = new RoomServiceClient(
   process.env.LIVEKIT_API_URL!,
@@ -88,6 +89,9 @@ export const createIngress = async (ingressType: IngressInput) => {
         streamKey: ingress.streamKey,
       },
     });
+
+    // Invalidate cache to ensure fresh data is fetched
+    await invalidateCache(`stream:user:${self.id}`);
 
     revalidatePath(`/u/${self.username}/keys`);
     return ingress;
