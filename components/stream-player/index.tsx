@@ -127,7 +127,7 @@ export const StreamPlayer = ({
         </div>
 
         {isShowTipModal && (
-          <MobileTipModal 
+          <MobileTipModal
             hostIdentity={user.id}
             hostWalletAddress={user.solanaWallet || ""}
             streamerId={user.id}

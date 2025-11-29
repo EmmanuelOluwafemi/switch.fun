@@ -36,6 +36,7 @@ export const GoLiveWithOBS = ({
   const [stream, setStream] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const router = useRouter();
 
@@ -74,19 +75,60 @@ export const GoLiveWithOBS = ({
   }, [user?.id, open]);
 
   const handleGenerateNewKey = useCallback(async () => {
+    setShowConfirmDialog(false);
+
     try {
       setIsLoading(true);
+      setError(null);
+
+      // Create ingress
       const ingress = await createIngress(IngressInput.RTMP_INPUT);
-      if (ingress) {
-        const result = await getStreamData();
-        if (result.stream) {
-          setStream(result.stream);
-          toast.success("New stream key generated");
-        }
+      console.log("Ingress created:", ingress);
+
+      // Validate ingress creation
+      if (!ingress) {
+        throw new Error("Failed to create ingress - no response received");
       }
-    } catch (error) {
+
+      if (!ingress.url || !ingress.streamKey) {
+        throw new Error("Ingress created but missing URL or stream key");
+      }
+
+      // Fetch updated stream data with retry logic
+      let retries = 3;
+      let result = null;
+
+      while (retries > 0) {
+        result = await getStreamData();
+        console.log("Stream data (attempt " + (4 - retries) + "):", result);
+
+        if (result.stream && result.stream.streamKey === ingress.streamKey) {
+          // Stream data updated successfully
+          break;
+        }
+
+        // Wait a bit before retrying
+        if (retries > 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        retries--;
+      }
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      if (!result?.stream) {
+        throw new Error("Failed to fetch updated stream data");
+      }
+
+      setStream(result.stream);
+      toast.success("New stream key generated successfully!");
+    } catch (error: any) {
       console.error("Error generating new key:", error);
-      toast.error("Failed to generate new key");
+      const errorMessage = error?.message || "Failed to generate new key";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -175,10 +217,17 @@ export const GoLiveWithOBS = ({
                 <div className="flex justify-between gap-x-2">
                   <Button
                     variant="outline"
-                    onClick={handleGenerateNewKey}
+                    onClick={() => setShowConfirmDialog(true)}
                     disabled={isLoading}
                   >
-                    Generate New Key
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                        Generating...
+                      </>
+                    ) : (
+                      "Generate New Key"
+                    )}
                   </Button>
                   <Link href={`/u/${user?.username}`}>
                     <Button variant="primary" className="font-semibold">
@@ -194,6 +243,41 @@ export const GoLiveWithOBS = ({
                 </div>
                 <div className="flex justify-end">
                   <ConnectModal />
+                </div>
+              </div>
+            )}
+
+            {/* Confirmation Dialog */}
+            {showConfirmDialog && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-background rounded-lg p-6 max-w-md mx-4 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-lg">
+                        Regenerate Stream Key?
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        This will invalidate your current stream key and disconnect any active streams using it. You&apos;ll need to update your streaming software with the new key.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowConfirmDialog(false)}
+                      disabled={isLoading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleGenerateNewKey}
+                      disabled={isLoading}
+                    >
+                      Regenerate Key
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

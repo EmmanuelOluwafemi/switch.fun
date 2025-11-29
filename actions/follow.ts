@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { 
-  followUser, 
+import {
+  followUser,
   unfollowUser
 } from "@/lib/follow-service";
 
@@ -19,7 +19,8 @@ export const onFollow = async (id: string) => {
 
     return followedUser;
   } catch (error) {
-    throw new Error("Interal Error");
+    console.error("Follow error:", error);
+    throw error;
   };
 };
 
@@ -35,6 +36,7 @@ export const onUnfollow = async (id: string) => {
 
     return unfollowedUser;
   } catch (error) {
-    throw new Error("Internal Error");
+    console.error("Unfollow error:", error);
+    throw error;
   }
 }

@@ -37,9 +37,21 @@ export async function GET(
       );
     }
 
+    // Get the database user from the external user ID
+    const dbUser = await db.user.findUnique({
+      where: { externalUserId: self.id },
+    });
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: "User not found in database" },
+        { status: 404 }
+      );
+    }
+
     // Check if following with caching
     const isFollowing = await getCachedData({
-      key: `following:${self.id}:${userId}`,
+      key: `following:${dbUser.id}:${userId}`,
       ttl: 60, // 1 minute (follow status can change)
       fetchFn: async () => {
         const otherUser = await db.user.findUnique({
@@ -50,13 +62,13 @@ export async function GET(
           throw new Error("User not found");
         }
 
-        if (otherUser.id === self.id) {
+        if (otherUser.id === dbUser.id) {
           return true; // You're always "following" yourself
         }
 
         const existingFollow = await db.follow.findFirst({
           where: {
-            followerId: self.id,
+            followerId: dbUser.id,
             followingId: otherUser.id,
           },
         });
@@ -68,14 +80,14 @@ export async function GET(
     return NextResponse.json({ isFollowing });
   } catch (err: any) {
     console.error("[GET /api/follow/check/[userId]] error:", err);
-    
+
     if (err.message === "User not found") {
       return NextResponse.json(
         { error: "User not found" },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json(
       { error: "Failed to check follow status" },
       { status: 500 }

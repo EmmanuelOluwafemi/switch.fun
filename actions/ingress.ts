@@ -42,48 +42,67 @@ export const resetIngresses = async (hostIdentity: string) => {
 };
 
 export const createIngress = async (ingressType: IngressInput) => {
-  const self = await getSelf();
+  try {
+    const self = await getSelf();
 
-  await resetIngresses(self.id);
+    await resetIngresses(self.id);
 
-  const options: CreateIngressOptions = {
-    name: self.username,
-    roomName: self.id,
-    participantName: self.username,
-    participantIdentity: self.id,
-  };
-
-  if (ingressType === IngressInput.WHIP_INPUT) {
-    options.bypassTranscoding = true;
-  } else {
-    options.video = {
-      source: TrackSource.CAMERA,
-      preset: IngressVideoEncodingPreset.H264_1080P_30FPS_3_LAYERS,
+    const options: CreateIngressOptions = {
+      name: self.username,
+      roomName: self.id,
+      participantName: self.username,
+      participantIdentity: self.id,
     };
-    options.audio = {
-      source: TrackSource.MICROPHONE,
-      preset: IngressAudioEncodingPreset.OPUS_STEREO_96KBPS
+
+    if (ingressType === IngressInput.WHIP_INPUT) {
+      options.bypassTranscoding = true;
+    } else {
+      options.video = {
+        source: TrackSource.CAMERA,
+        preset: IngressVideoEncodingPreset.H264_1080P_30FPS_3_LAYERS,
+      };
+      options.audio = {
+        source: TrackSource.MICROPHONE,
+        preset: IngressAudioEncodingPreset.OPUS_STEREO_96KBPS
+      };
     };
-  };
 
-  const ingress = await ingressClient.createIngress(
-    ingressType,
-    options,
-  );
+    const ingress = await ingressClient.createIngress(
+      ingressType,
+      options,
+    );
 
-  if (!ingress || !ingress.url || !ingress.streamKey) {
-    throw new Error("Failed to create ingress");
+    if (!ingress) {
+      throw new Error("LiveKit failed to create ingress - no response received");
+    }
+
+    if (!ingress.url || !ingress.streamKey) {
+      throw new Error("LiveKit created ingress but did not provide URL or stream key");
+    }
+
+    await db.stream.update({
+      where: { userId: self.id },
+      data: {
+        ingressId: ingress.ingressId,
+        serverUrl: ingress.url,
+        streamKey: ingress.streamKey,
+      },
+    });
+
+    revalidatePath(`/u/${self.username}/keys`);
+    return ingress;
+  } catch (error: any) {
+    console.error("Error in createIngress:", error);
+
+    // Provide more specific error messages
+    if (error.message?.includes("LiveKit")) {
+      throw error; // Re-throw our custom errors
+    }
+
+    if (error.code === "P2025") {
+      throw new Error("Stream not found in database. Please contact support.");
+    }
+
+    throw new Error(error.message || "Failed to create stream ingress");
   }
-
-  await db.stream.update({
-    where: { userId: self.id },
-    data: {
-      ingressId: ingress.ingressId,
-      serverUrl: ingress.url,
-      streamKey: ingress.streamKey,
-    },
-  });
-
-  revalidatePath(`/u/${self.username}/keys`);
-  return ingress;
 };

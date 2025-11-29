@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
-import { getSelfFromApi } from "@/lib/auth-service";
+import { getSelf } from "@/lib/auth-service";
 
 export const getFollowedUsers = async () => {
   try {
-    const self = await getSelfFromApi();
+    const self = await getSelf();
 
     const followedUsers = db.follow.findMany({
       where: {
@@ -49,7 +49,7 @@ export const getFollowedUsers = async () => {
 
 export const isFollowingUser = async (id: string) => {
   try {
-    const self = await getSelfFromApi();
+    const self = await getSelf();
 
     const otherUser = await db.user.findUnique({
       where: { id },
@@ -77,7 +77,7 @@ export const isFollowingUser = async (id: string) => {
 };
 
 export const followUser = async (id: string) => {
-  const self = await getSelfFromApi();
+  const self = await getSelf();
 
   const otherUser = await db.user.findUnique({
     where: { id },
@@ -117,7 +117,7 @@ export const followUser = async (id: string) => {
 };
 
 export const unfollowUser = async (id: string) => {
-  const self = await getSelfFromApi();
+  const self = await getSelf();
 
   const otherUser = await db.user.findUnique({
     where: {
