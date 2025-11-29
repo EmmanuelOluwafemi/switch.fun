@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { Participant, Track, VideoQuality, RemoteTrackPublication } from "livekit-client";
 import { useTracks } from "@livekit/components-react";
 import { useEventListener } from "usehooks-ts";
@@ -26,6 +26,17 @@ export const LiveVideo = ({
   // Get video tracks for this participant (supports both camera and OBS/ingress streams)
   const videoTracks = useTracks([Track.Source.Camera, Track.Source.Unknown])
     .filter((track) => track.participant.identity === participant.identity);
+
+  // Get all tracks at top level (required by React hooks rules)
+  const allTracks = useTracks([Track.Source.Camera, Track.Source.Microphone]);
+
+  // Memoize filtered tracks to avoid unnecessary filtering on every render
+  const participantTracks = useMemo(
+    () => allTracks.filter(
+      (track) => track.participant.identity === participant.identity
+    ),
+    [allTracks, participant.identity]
+  );
 
   const onVolumeChange = (value: number) => {
     setVolume(+value);
@@ -83,18 +94,26 @@ export const LiveVideo = ({
     onVolumeChange(100);
   }, []);
 
+  // Track previous tracks for proper cleanup
+  const previousTracksRef = useRef<typeof participantTracks>([]);
+
   // Attach/detach tracks to video element with proper cleanup
   useEffect(() => {
     const videoElement = videoRef.current;
     if (!videoElement) return;
 
-    const participantTracks = useTracks([Track.Source.Camera, Track.Source.Microphone])
-      .filter((track) => track.participant.identity === participant.identity);
+    // Detach previous tracks first
+    previousTracksRef.current.forEach((track) => {
+      track.publication.track?.detach(videoElement);
+    });
 
-    // Attach tracks to video element
+    // Attach new tracks
     participantTracks.forEach((track) => {
       track.publication.track?.attach(videoElement);
     });
+
+    // Store current tracks for next cleanup
+    previousTracksRef.current = participantTracks;
 
     // Cleanup: detach tracks when component unmounts or participant changes
     return () => {
@@ -102,7 +121,7 @@ export const LiveVideo = ({
         track.publication.track?.detach(videoElement);
       });
     };
-  }, [participant.identity]);
+  }, [participantTracks]);
 
   const toggleFullscreen = () => {
     if (isFullscreen) {
