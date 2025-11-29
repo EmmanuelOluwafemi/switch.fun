@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Share2, UserIcon } from "lucide-react";
 import {
   useParticipants,
@@ -37,7 +38,13 @@ export const Header = ({
   const { user: currentUser } = useUser();
 
   const isLive = !!participant;
-  const participantCount = participants.length - 1;
+  const participantCount = useMemo(() => {
+    return participants.filter(
+      (participant) =>
+        participant.identity !== hostIdentity &&
+        participant.identity !== `host-${hostIdentity}`
+    ).length;
+  }, [participants, hostIdentity]);
 
   const hostAsViewer = `host-${hostIdentity}`;
   const isHost = viewerIdentity === hostAsViewer;
