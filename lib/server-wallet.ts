@@ -55,7 +55,7 @@ export const initializeServerWallet = (): Keypair => {
 export const getConnection = (): Connection => {
   if (!connection) {
     const rpcEndpoint =
-      process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com";
+      process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
     connection = new Connection(rpcEndpoint, "confirmed");
   }
   return connection;
