@@ -24,9 +24,10 @@ import { withdraw } from "./withdrawalService";
 import { getProgram } from "@/utils/program";
 // import { Wallet as WalletType } from "@coral-xyz/anchor";
 import { toast } from "sonner";
+import { supportedTokens } from "@/config/wallet.js";
 
 // USDC Token mint (6 decimals)
-const USDC_MINT = new PublicKey("2o39Cm7hzaXmm9zGGGsa5ZiveJ93oMC2D6U7wfsREcCo");
+const USDC_MINT = new PublicKey(supportedTokens.contractAddress);
 const USDC_DECIMALS = 6;
 
 interface WalletBalance {

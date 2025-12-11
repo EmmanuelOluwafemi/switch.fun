@@ -12,6 +12,7 @@ import React, { useState, useCallback } from "react";
 import { useUser } from "@civic/auth-web3/react";
 import { userHasWallet } from "@civic/auth-web3";
 import { Wallet, Shield, Zap } from "lucide-react";
+import { supportedTokens } from "@/config/wallet.js";
 
 interface ActivatePlatformWalletModalProps {
   open: boolean;
@@ -53,7 +54,7 @@ export const ActivatePlatformWalletModal = React.memo(
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tokenMint: "2o39Cm7hzaXmm9zGGGsa5ZiveJ93oMC2D6U7wfsREcCo", // Your token mint
+            tokenMint: supportedTokens.contractAddress, // Your token mint
             userPublicKey: solanaWallet,
           }),
         });

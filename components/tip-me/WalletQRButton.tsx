@@ -23,6 +23,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { BN } from "bn.js";
+import { supportedTokens as globalSupportedTokens } from "@/config/wallet.js";
 // import { Wallet } from "@coral-xyz/anchor";
 
 interface WalletQRButtonProps {
@@ -34,12 +35,12 @@ const supportedTokens = [
   {
     name: "USDC",
     symbol: "usdc",
-    contractAddress: "2o39Cm7hzaXmm9zGGGsa5ZiveJ93oMC2D6U7wfsREcCo",
+    contractAddress: globalSupportedTokens.contractAddress,
   },
   {
     name: "USDT",
     symbol: "usdt",
-    contractAddress: "2o39Cm7hzaXmm9zGGGsa5ZiveJ93oMC2D6U7wfsREcCo",
+    contractAddress: globalSupportedTokens.contractAddress,
   },
 ];
 
