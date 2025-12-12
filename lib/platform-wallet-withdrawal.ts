@@ -12,7 +12,7 @@ import {
   signAndSendTransaction,
 } from "./server-wallet";
 import { AnchorError } from "@coral-xyz/anchor";
-import { supportedTokens } from "@/config/wallet.js";
+import { supportedTokens } from "@/config/wallet";
 
 const USDC_MINT = new PublicKey(supportedTokens.contractAddress);
 const USDC_DECIMALS = 6;

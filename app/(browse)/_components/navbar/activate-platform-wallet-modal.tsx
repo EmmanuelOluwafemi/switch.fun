@@ -12,7 +12,7 @@ import React, { useState, useCallback } from "react";
 import { useUser } from "@civic/auth-web3/react";
 import { userHasWallet } from "@civic/auth-web3";
 import { Wallet, Shield, Zap } from "lucide-react";
-import { supportedTokens } from "@/config/wallet.js";
+import { supportedTokens } from "@/config/wallet";
 
 interface ActivatePlatformWalletModalProps {
   open: boolean;

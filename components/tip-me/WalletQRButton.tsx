@@ -23,7 +23,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { BN } from "bn.js";
-import { supportedTokens as globalSupportedTokens } from "@/config/wallet.js";
+import { supportedTokens as globalSupportedTokens } from "@/config/wallet";
 // import { Wallet } from "@coral-xyz/anchor";
 
 interface WalletQRButtonProps {
