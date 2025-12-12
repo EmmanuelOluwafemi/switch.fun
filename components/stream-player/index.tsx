@@ -34,6 +34,7 @@ export type CustomUser = {
   imageUrl: string;
   externalUserId: string;
   solanaWallet: string | null;
+  platformWallet: string | null;
   _count: { followedBy: number };
 };
 
@@ -107,7 +108,7 @@ export const StreamPlayer = ({
             viewerName={name}
             hostName={user.username}
             hostIdentity={user.id}
-            hostWalletAddress={user.solanaWallet || ""}
+            hostWalletAddress={user.solanaWallet || user.platformWallet || ""}
             isFollowing={isFollowing}
             isChatEnabled={stream.isChatEnabled}
             isChatDelayed={stream.isChatDelayed}

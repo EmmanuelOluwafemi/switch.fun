@@ -24,6 +24,7 @@ export const getUserByUsername = async (username: string) => {
         bio: true,
         imageUrl: true,
         solanaWallet: true,
+        platformWallet: true,
         stream: {
           select: {
             id: true,
@@ -100,18 +101,21 @@ export const invalidateUserCache = async (userId: string, username: string) => {
 export const getUserByUsernameFromApi = async (username: string) => {
   // Ensure we have a valid base URL
   let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
-  
+
   // If NEXT_PUBLIC_APP_URL is not set or invalid, use localhost
-  if (!baseUrl || !baseUrl.startsWith('http')) {
+  if (!baseUrl || !baseUrl.startsWith("http")) {
     baseUrl = "http://localhost:3000";
   }
-  
+
   // Ensure baseUrl ends with a slash for proper URL construction
-  if (!baseUrl.endsWith('/')) {
-    baseUrl += '/';
+  if (!baseUrl.endsWith("/")) {
+    baseUrl += "/";
   }
-  
-  const url = new URL(`api/user/public/${encodeURIComponent(username)}`, baseUrl).toString();
+
+  const url = new URL(
+    `api/user/public/${encodeURIComponent(username)}`,
+    baseUrl
+  ).toString();
 
   const response = await fetch(url, {
     cache: "no-store",
@@ -127,18 +131,21 @@ export const getUserByUsernameFromApi = async (username: string) => {
 export const getUserByIdFromApi = async (id: string) => {
   // Ensure we have a valid base URL
   let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
-  
+
   // If NEXT_PUBLIC_APP_URL is not set or invalid, use localhost
-  if (!baseUrl || !baseUrl.startsWith('http')) {
+  if (!baseUrl || !baseUrl.startsWith("http")) {
     baseUrl = "http://localhost:3000";
   }
-  
+
   // Ensure baseUrl ends with a slash for proper URL construction
-  if (!baseUrl.endsWith('/')) {
-    baseUrl += '/';
+  if (!baseUrl.endsWith("/")) {
+    baseUrl += "/";
   }
-  
-  const url = new URL(`api/user/by-id/${encodeURIComponent(id)}`, baseUrl).toString();
+
+  const url = new URL(
+    `api/user/by-id/${encodeURIComponent(id)}`,
+    baseUrl
+  ).toString();
 
   const response = await fetch(url, {
     cache: "no-store",
