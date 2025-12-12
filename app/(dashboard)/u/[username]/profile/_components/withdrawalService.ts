@@ -16,9 +16,10 @@ import { BN } from "bn.js";
 import { getProgram } from "@/utils/program";
 import { userHasWallet } from "@civic/auth-web3";
 import idl from "@/switched_fun_program/target/idl/switched_fun.json";
+import { supportedTokens } from "@/config/wallet";
 
 // Constants
-const USDC_MINT = new PublicKey("2o39Cm7hzaXmm9zGGGsa5ZiveJ93oMC2D6U7wfsREcCo");
+const USDC_MINT = new PublicKey(supportedTokens.contractAddress);
 const PROGRAM_ID = new PublicKey("swinS25mqCw6ExEAtLJFxp6HYcqMvoYxKz3by6FfbRD");
 const USDC_DECIMALS = 6;
 

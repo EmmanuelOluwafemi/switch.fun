@@ -12,8 +12,9 @@ import {
   signAndSendTransaction,
 } from "./server-wallet";
 import { AnchorError } from "@coral-xyz/anchor";
+import { supportedTokens } from "@/config/wallet";
 
-const USDC_MINT = new PublicKey("2o39Cm7hzaXmm9zGGGsa5ZiveJ93oMC2D6U7wfsREcCo");
+const USDC_MINT = new PublicKey(supportedTokens.contractAddress);
 const USDC_DECIMALS = 6;
 
 // Generate a withdrawal transaction for user to sign
