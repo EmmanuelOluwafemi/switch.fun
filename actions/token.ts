@@ -18,7 +18,7 @@ export const createViewerToken = async (hostIdentity: string) => {
     self = { id, username };
   }
 
-    const host = await getUserById(hostIdentity);
+  const host = await getUserById(hostIdentity);
 
   if (!host) {
     throw new Error("User not found");
@@ -36,7 +36,9 @@ export const createViewerToken = async (hostIdentity: string) => {
     process.env.LIVEKIT_API_KEY!,
     process.env.LIVEKIT_API_SECRET!,
     {
-      identity: isHost ? `host-${self.id}` : self.id,
+      // Make identity unique per room to prevent LiveKit from disconnecting
+      // viewers when they open multiple streams in different tabs
+      identity: isHost ? `host-${self.id}` : `${self.id}-${host.id}`,
       name: self.username,
     }
   );

@@ -14,7 +14,6 @@ import { TrackSource } from "livekit-server-sdk/dist/proto/livekit_models";
 import { db } from "@/lib/db";
 import { getSelf } from "@/lib/auth-service";
 import { revalidatePath } from "next/cache";
-import { invalidateCache } from "@/lib/redis";
 
 const roomService = new RoomServiceClient(
   process.env.LIVEKIT_API_URL!,
@@ -31,13 +30,28 @@ export const resetIngresses = async (hostIdentity: string) => {
 
   const rooms = await roomService.listRooms([hostIdentity]);
 
-  for (const room of rooms) {
-    await roomService.deleteRoom(room.name);
-  }
-
+  console.log(`[resetIngresses] Found ${ingresses.length} ingresses for host ${hostIdentity}`);
   for (const ingress of ingresses) {
     if (ingress.ingressId) {
-      await ingressClient.deleteIngress(ingress.ingressId);
+      // Debug log to see what we are getting
+      console.log(`[resetIngresses] Inspecting ingress: ${ingress.ingressId}, room: ${ingress.roomName}, participant: ${ingress.participantIdentity}`);
+
+      // Safety check: Only delete if it belongs to this user
+      if (ingress.roomName === hostIdentity || ingress.participantIdentity === hostIdentity) {
+        console.log(`[resetIngresses] Deleting ingress belonging to host: ${ingress.ingressId}`);
+        await ingressClient.deleteIngress(ingress.ingressId);
+      } else {
+        console.warn(`[resetIngresses] SKIPPING deletion of ingress ${ingress.ingressId} - it does not match host ${hostIdentity}`);
+      }
+    }
+  }
+
+  for (const room of rooms) {
+    if (room.name === hostIdentity) {
+      console.log(`[resetIngresses] Deleting room: ${room.name}`);
+      await roomService.deleteRoom(room.name);
+    } else {
+      console.warn(`[resetIngresses] SKIPPING deletion of room ${room.name} - it does not match host ${hostIdentity}`);
     }
   }
 };
@@ -89,9 +103,6 @@ export const createIngress = async (ingressType: IngressInput) => {
         streamKey: ingress.streamKey,
       },
     });
-
-    // Invalidate cache to ensure fresh data is fetched
-    await invalidateCache(`stream:user:${self.id}`);
 
     revalidatePath(`/u/${self.username}/keys`);
     return ingress;
