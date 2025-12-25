@@ -95,6 +95,16 @@ export const createIngress = async (ingressType: IngressInput) => {
       throw new Error("LiveKit created ingress but did not provide URL or stream key");
     }
 
+    // Debug logging for multi-streamer issues
+    console.log("[createIngress] Success", {
+      ingressId: ingress.ingressId,
+      roomName: options.roomName,
+      participantIdentity: options.participantIdentity,
+      participantName: options.participantName,
+      userId: self.id,
+      username: self.username,
+    });
+
     await db.stream.update({
       where: { userId: self.id },
       data: {

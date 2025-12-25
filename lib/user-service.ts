@@ -62,7 +62,7 @@ export const getUserByUsername = async (username: string) => {
  */
 export const getUserById = async (id: string) => {
   return getCachedData({
-    key: "user:id:${id}",
+    key: `user:id:${id}`,
     ttl: 300, // 5 minutes
     fetchFn: async () => {
       const user = await db.user.findFirst({
@@ -93,8 +93,8 @@ export const getUserById = async (id: string) => {
  */
 export const invalidateUserCache = async (userId: string, username: string) => {
   await Promise.all([
-    invalidateCache("user:id:${userId}"),
-    invalidateCache("user:username:${username.toLowerCase()}"),
+    invalidateCache(`user:id:${userId}`),
+    invalidateCache(`user:username:${username.toLowerCase()}`),
   ]);
 };
 

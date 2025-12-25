@@ -23,12 +23,16 @@ export const LiveVideo = ({
   const [volume, setVolume] = useState(100);
   const [videoQuality, setVideoQuality] = useState("auto");
 
-  // Get video tracks for this participant (supports both camera and OBS/ingress streams)
-  const videoTracks = useTracks([Track.Source.Camera, Track.Source.Unknown])
-    .filter((track) => track.participant.identity === participant.identity);
-
   // Get all tracks at top level (required by React hooks rules)
-  const allTracks = useTracks([Track.Source.Camera, Track.Source.Microphone]);
+  // Include Unknown source for RTMP/OBS ingress streams
+  // Include ScreenShare for screen sharing streams
+  const allTracks = useTracks([
+    Track.Source.Camera,
+    Track.Source.Microphone,
+    Track.Source.Unknown,
+    Track.Source.ScreenShare,
+    Track.Source.ScreenShareAudio,
+  ]);
 
   // Memoize filtered tracks to avoid unnecessary filtering on every render
   const participantTracks = useMemo(
@@ -37,6 +41,32 @@ export const LiveVideo = ({
     ),
     [allTracks, participant.identity]
   );
+
+  // Get video-only tracks for quality control (supports both camera and OBS/ingress streams)
+  const videoTracks = useMemo(
+    () => participantTracks.filter(
+      (track) => 
+        track.source === Track.Source.Camera || 
+        track.source === Track.Source.Unknown ||
+        track.source === Track.Source.ScreenShare
+    ),
+    [participantTracks]
+  );
+
+  // Debug logging for multi-streamer issues
+  if (process.env.NODE_ENV === "development") {
+    console.log("[LiveVideo Debug]", {
+      participantIdentity: participant.identity,
+      allTracksCount: allTracks.length,
+      participantTracksCount: participantTracks.length,
+      videoTracksCount: videoTracks.length,
+      trackDetails: participantTracks.map(t => ({
+        source: t.source,
+        kind: t.publication.kind,
+        identity: t.participant.identity,
+      })),
+    });
+  }
 
   const onVolumeChange = (value: number) => {
     setVolume(+value);

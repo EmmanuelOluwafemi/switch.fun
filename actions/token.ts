@@ -32,13 +32,15 @@ export const createViewerToken = async (hostIdentity: string) => {
 
   const isHost = self.id === host.id;
 
+  const viewerIdentity = isHost ? `host-${self.id}` : `${self.id}-${host.id}`;
+  
   const token = new AccessToken(
     process.env.LIVEKIT_API_KEY!,
     process.env.LIVEKIT_API_SECRET!,
     {
       // Make identity unique per room to prevent LiveKit from disconnecting
       // viewers when they open multiple streams in different tabs
-      identity: isHost ? `host-${self.id}` : `${self.id}-${host.id}`,
+      identity: viewerIdentity,
       name: self.username,
     }
   );
@@ -48,6 +50,15 @@ export const createViewerToken = async (hostIdentity: string) => {
     roomJoin: true,
     canPublish: false,
     canPublishData: true,
+  });
+
+  // Debug logging for multi-streamer issues
+  console.log("[createViewerToken]", {
+    roomName: host.id,
+    hostUsername: host.username,
+    viewerIdentity,
+    viewerName: self.username,
+    isHost,
   });
 
   return await Promise.resolve(token.toJwt());

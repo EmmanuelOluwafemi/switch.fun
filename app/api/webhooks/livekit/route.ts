@@ -20,10 +20,18 @@ export async function POST(req: Request) {
     }
 
     const event = receiver.receive(body, authorization);
-    console.log("LiveKit webhook event:", event.event);
+    
+    // Enhanced debug logging for multi-streamer issues
+    console.log("[LiveKit Webhook]", {
+      event: event.event,
+      ingressId: event.ingressInfo?.ingressId,
+      roomName: event.ingressInfo?.roomName,
+      participantIdentity: event.ingressInfo?.participantIdentity,
+      participantName: event.ingressInfo?.participantName,
+    });
 
     if (event.event === "ingress_started") {
-      await db.stream.update({
+      const stream = await db.stream.update({
         where: {
           ingressId: event.ingressInfo?.ingressId,
         },
@@ -31,11 +39,15 @@ export async function POST(req: Request) {
           isLive: true,
         },
       });
-      console.log("Stream set to live:", event.ingressInfo?.ingressId);
+      console.log("[Webhook] Stream set to LIVE:", {
+        ingressId: event.ingressInfo?.ingressId,
+        streamId: stream.id,
+        userId: stream.userId,
+      });
     }
 
     if (event.event === "ingress_ended") {
-      await db.stream.update({
+      const stream = await db.stream.update({
         where: {
           ingressId: event.ingressInfo?.ingressId,
         },
@@ -43,7 +55,11 @@ export async function POST(req: Request) {
           isLive: false,
         },
       });
-      console.log("Stream set to offline:", event.ingressInfo?.ingressId);
+      console.log("[Webhook] Stream set to OFFLINE:", {
+        ingressId: event.ingressInfo?.ingressId,
+        streamId: stream.id,
+        userId: stream.userId,
+      });
     }
 
     // Always return success response for LiveKit

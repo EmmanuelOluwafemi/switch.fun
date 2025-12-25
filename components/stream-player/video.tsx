@@ -40,10 +40,28 @@ export const Video = ({ hostName, hostIdentity, thumbnailUrl }: VideoProps) => {
   const [giftTips] = useAtom(streamGiftTipsFamily(hostIdentity));
   const [, removeNotification] = useAtom(removeStreamTipNotificationFamily(hostIdentity));
 
+  // Include Track.Source.Unknown for RTMP/OBS ingress streams
+  // Include ScreenShare for screen sharing streams
   const tracks = useTracks([
     Track.Source.Camera,
     Track.Source.Microphone,
+    Track.Source.Unknown,
+    Track.Source.ScreenShare,
+    Track.Source.ScreenShareAudio,
   ]).filter((track) => track.participant.identity === hostIdentity);
+
+  // Debug logging for multi-streamer issues
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Video Debug]", {
+      roomName: room?.name,
+      hostIdentity,
+      connectionState,
+      participantFound: !!participant,
+      participantIdentity: participant?.identity,
+      tracksCount: tracks.length,
+      trackSources: tracks.map(t => ({ source: t.source, identity: t.participant.identity })),
+    });
+  }
 
   // Note: Tip notifications are handled by the Chat component via useTipBroadcast
   // The Video component only consumes the notifications from stream-scoped atoms
